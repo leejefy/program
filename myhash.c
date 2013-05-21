@@ -23,13 +23,19 @@ struct config_entry *head[200] = {NULL};
 
 int config_count[200];
 
-/*
+//void config_free(struct config_entry *head);
+void config_free(void);
+
+static struct config_entry *config_dump(struct config_entry *head ,const char *name);
+
+void config_push(char *name,char *value);
+
 void free_one(void *p)
 {
 	printf("<---- free mem %p \n",p);	
 	free(p);
 }
-
+/*
 void my_free(struct config_entry *p)
 {
 	free_one(p->value);
@@ -48,38 +54,19 @@ static int hash(const char *s)
 	return hash;
 }
 
-/*
-struct config_entry *sort_out(struct config_entry *head)
-{
-	int i;
-	struct config_entry *entry;
-	entry = (struct config_entry *)malloc(sizeof(*entry));
-	if (entry == NULL){
-		return NULL;
-	}
-	memcpy(entry, head , sizeof(*entry));
-	
-	i = hash(entry->name)%hash_table_size;
-	
-	config_count[i]++;
-	printf("config table---> %d ( %d ) ,[ %s ]", i,config_count[i],entry->name );
-	
-	entry->next = head[i];
-	head[i] = entry;
-	return entry;
-}
-*/
-
-void config_dump( struct config_entry *head )
+static struct config_entry *config_dump(struct config_entry *head ,const char *name)
 {
 	struct config_entry *entry = head;
+
 	while(entry){
-		printf("[%s] = %s , %d \n",entry->name,entry->value,hash(entry->name));
-		entry = entry->next;	
-	}
+		if (!strcmp(name, entry->name)){
+//			printf("[%s] = %s \n",entry->name,entry->value);
+			return entry;
+		}
+		entry = entry->next;		
+	}	
+	return NULL;
 }
-
-
 
 void config_push(char *name,char *value)
 {
@@ -88,34 +75,110 @@ void config_push(char *name,char *value)
 
 	entry = (struct config_entry *)malloc(sizeof(	struct config_entry));
 
-//	printf("------>new mem:%p\n", entry);		
+	printf("------>new mem:%p\n", entry);		
 
 	entry->name = strdup(name); // malloc(strlen(name) + 1); strcpy(entry->name, name)
-//	printf("------>new mem:%p\n", entry->name);
+	printf("------>new mem:%p\n", entry->name);
 				
 	entry->value = strdup(value);
-//	printf("------>new mem:%p\n", entry->value);	
+	printf("------>new mem:%p\n", entry->value);	
 
 	i = hash(entry->name)%hash_table_size;
 	
 	config_count[i]++;
 	printf("config table---> %d ( %d ) ,[ %s ] \n", i,config_count[i],entry->name );
-	
+
 	entry->next = head[i];
 	head[i] = entry;
+	config_dump(head[i],entry->name);
 }
 
-void config_free(struct config_entry *head)
+void config_free(void)
 {
-	struct config_entry *p = head ,*q;
+	struct config_entry *p = NULL ,*q;
+	int i;
+//	i = hash(p->name)%hash_table_size;
+	for (i = 0; i < hash_table_size; i ++){
+		p = head[i];
+		while(p){
+			q = p->next;			
+			if ( p->value!= NULL ) { free_one(p->value); }
+			if ( p->name!= NULL ) { free_one(p->name); }
+			free_one(p); 
+			p = q;		
+		}	
+//		head[i] = NULL;
+	}
+}
 
-	while(p){
-		q = p->next;			
-		if ( p->value!= NULL ) { free(p->value); }
-		if ( p->name!= NULL ) { free(p->name); }	
-		free(p); 
-		p = q;		
-	}	
+
+char *read_config(char *info)
+{
+//	struct keyword *entry = NULL;
+		char *end_pos;
+		char *start_pos;
+		char *sp;
+		char *name,*value;
+		/*
+		   | -- [[  ]]  [[  ]] |		                 
+		*/
+		sp =strdup(info);
+	//	printf("info :%s \n" ,sp);
+		start_pos = strstr(sp,START_MARK); // [[^
+		if( start_pos == NULL ){
+			printf("Invalid value 1!\n");	
+			return 0;		
+		}
+		start_pos += strlen(START_MARK); // [[^
+		
+		end_pos = strstr(start_pos,END_MARK); // ]]^
+
+		if( end_pos == NULL ){
+			printf("Invalid value 2!\n");	
+			return 0;
+		}
+		*end_pos = '\0';
+		/*
+		   | -- [[  ]]\0  [[  ]] |		                 
+		     end_pos  ^
+		*/
+		
+		name = start_pos;
+//		printf("name: %s  \n", name); 
+	
+		start_pos = end_pos;
+		/*
+		   | -- [[  ]]\0 ]] [[  ]] [[ ]]  [[  ]] |		                 
+		     start_pos ^
+		     p = info
+		     get_next_value(p );
+		     p + x;
+		     get_next_value(p);
+		     
+		*/
+		sp = end_pos + 1;
+		start_pos = strstr(sp,START_MARK); //[[^
+		if( start_pos == NULL ){
+			printf("Invalid value 3! \n");	
+			return 0;
+		}
+		start_pos += strlen(START_MARK);
+		
+		end_pos = strstr(start_pos,END_MARK); // ]]^
+	//	printf("%p - %p  = %d\n", start_pos, end_pos, end_pos - start_pos);
+		if( end_pos == NULL ){
+			printf("Invalid value 4! \n");	
+			return 0;
+		}
+		*end_pos = '\0';
+		
+		value = start_pos;
+		
+//	printf("value: %s  \n", value);
+		
+		config_push(name, value);
+	
+		return 0;
 }
 
 	// set fp to open file 
@@ -129,36 +192,29 @@ int main(int argc, char** argv)
 {
 //	struct config_entry *p, *next;
 	
-	config_push("ddd", "value");// malloc(config_entry) malloc(name) malloc(value)
-  config_push("eeee", "valueddd");
-  config_push("aaaaa", "valuessss");
-  
-	config_push("Ip address" , "IP地址");
-	config_push("Gateway" , "网关");
-	config_push("Subnet Mask" , "子网掩码");
-	config_push("Sytem Setting" , "系统管理");
-	config_push("Management" , "管理参数");
-	config_push("Switch Setting" , "设备管理");
-	config_push("Network Topology" , "业务理");
-	config_push("User List" , "用户管理");
-	config_push("System Status" , "系统状态");
-	config_push("Date & Time" , "日期及时间");
-	config_push("Configuration" , "配置管理");
-	config_push("Reboot" , "系统重启");
-	config_push("Upgrade" , "软件升级");
-	config_push("System Log" , "系统日志");
-	config_push("IP Setting" , "管理IP设置");
-	config_push("Security" , "管理安全设置");
-	config_push("SNMP" , "SNMP设置");
-	config_push("Administrator" , "管理员");
-	config_push("Interface" , "端口管理");
-	config_push("StormFilter" , "广播风暴抑制");
-	config_push("VLAN Mode" , "VLAN模式设置");
-  
+//	config_push("ddd", "value");// malloc(config_entry) malloc(name) malloc(value)
+//  config_push("eeee", "valueddd");
+//  config_push("aaaaa", "valuessss");
 
-	//config_dump(head);
-	//sort_out(head);
 	//config_free(head);
+	
+	FILE *fp;
+
+	char buffer[1024];
+	
+	fp = fopen(TEST_FILE_PATH, "r");
+
+	if(fp) {
+		while(!feof(fp)) {// finish then 1:exit 
+			if (fgets(buffer, sizeof(buffer), fp)){
+	 			read_config(buffer);
+			}
+		}
+		config_free();
+		fclose(fp);
+	} else {
+		fprintf(stderr, "Fail to open log file!\n");
+	}
 
 	return 0;
 }
