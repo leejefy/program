@@ -17,7 +17,7 @@ struct config_entry{
 
 //struct config_entry *head = NULL;
 
-struct config_entry *head[200] = NULL;
+struct config_entry *head[200] = {NULL};
 
 #define hash_table_size sizeof(head)/sizeof(head[0])
 
@@ -91,12 +91,15 @@ void config_push(char *name,char *value)
 //	printf("------>new mem:%p\n", entry);		
 
 	entry->name = strdup(name); // malloc(strlen(name) + 1); strcpy(entry->name, name)
-	printf("------>new mem:%p\n", entry->name);
+//	printf("------>new mem:%p\n", entry->name);
 				
 	entry->value = strdup(value);
 //	printf("------>new mem:%p\n", entry->value);	
 
 	i = hash(entry->name)%hash_table_size;
+	
+	config_count[i]++;
+	printf("config table---> %d ( %d ) ,[ %s ] \n", i,config_count[i],entry->name );
 	
 	entry->next = head[i];
 	head[i] = entry;
@@ -129,6 +132,29 @@ int main(int argc, char** argv)
 	config_push("ddd", "value");// malloc(config_entry) malloc(name) malloc(value)
   config_push("eeee", "valueddd");
   config_push("aaaaa", "valuessss");
+  
+	config_push("Ip address" , "IP地址");
+	config_push("Gateway" , "网关");
+	config_push("Subnet Mask" , "子网掩码");
+	config_push("Sytem Setting" , "系统管理");
+	config_push("Management" , "管理参数");
+	config_push("Switch Setting" , "设备管理");
+	config_push("Network Topology" , "业务理");
+	config_push("User List" , "用户管理");
+	config_push("System Status" , "系统状态");
+	config_push("Date & Time" , "日期及时间");
+	config_push("Configuration" , "配置管理");
+	config_push("Reboot" , "系统重启");
+	config_push("Upgrade" , "软件升级");
+	config_push("System Log" , "系统日志");
+	config_push("IP Setting" , "管理IP设置");
+	config_push("Security" , "管理安全设置");
+	config_push("SNMP" , "SNMP设置");
+	config_push("Administrator" , "管理员");
+	config_push("Interface" , "端口管理");
+	config_push("StormFilter" , "广播风暴抑制");
+	config_push("VLAN Mode" , "VLAN模式设置");
+  
 
 	//config_dump(head);
 	//sort_out(head);
