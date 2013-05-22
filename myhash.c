@@ -11,7 +11,6 @@
 struct config_entry{
 	char *name;
 	char *value;
-	//int flag;
 	struct config_entry *next;
 };
 
